@@ -1,0 +1,13 @@
+*.pyc
+*.png
+*.jpg
+*.dat
+Debug/
+debug/
+Data/
+data/
+cmake-build-debug/
+.idea/
+.vscode/
+*.code-workspace
+
