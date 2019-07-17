@@ -54,7 +54,6 @@ MsckfVio::MsckfVio(ros::NodeHandle& pnh):
   is_gravity_set(false),
   is_first_img(true),
   nh(pnh) {
-  return;
 }
 
 bool MsckfVio::loadParameters() {
@@ -136,8 +135,8 @@ bool MsckfVio::loadParameters() {
   state_server.imu_state.t_cam0_imu = T_cam0_imu.translation();
   CAMState::T_cam0_cam1 =
     utils::getTransformEigen(nh, "cam1/T_cn_cnm1");
-  IMUState::T_imu_body =
-    utils::getTransformEigen(nh, "T_imu_body").inverse();
+  // IMUState::T_imu_body =
+  //   utils::getTransformEigen(nh, "T_imu_body").inverse();
 
   // Maximum number of camera states to be stored
   nh.param<int>("max_cam_state_size", max_cam_state_size, 30);
@@ -241,8 +240,6 @@ void MsckfVio::imuCallback(
     initializeGravityAndBias();
     is_gravity_set = true;
   }
-
-  return;
 }
 
 void MsckfVio::initializeGravityAndBias() {
@@ -279,8 +276,6 @@ void MsckfVio::initializeGravityAndBias() {
     gravity_imu, -IMUState::gravity);
   state_server.imu_state.orientation =
     rotationToQuaternion(q0_i_w.toRotationMatrix().transpose());
-
-  return;
 }
 
 bool MsckfVio::resetCallback(
@@ -371,7 +366,7 @@ void MsckfVio::featureCallback(
     state_server.imu_state.time = msg->header.stamp.toSec();
   }
 
-  static double max_processing_time = 0.0;
+//  static double max_processing_time = 0.0;
   static int critical_time_cntr = 0;
   double processing_start_time = ros::Time::now().toSec();
 
@@ -379,21 +374,21 @@ void MsckfVio::featureCallback(
   // that are received before the image msg.
   ros::Time start_time = ros::Time::now();
   batchImuProcessing(msg->header.stamp.toSec());
-  double imu_processing_time = (
-      ros::Time::now()-start_time).toSec();
+//  double imu_processing_time = (
+//      ros::Time::now()-start_time).toSec();
 
   // Augment the state vector.
-  start_time = ros::Time::now();
+//  start_time = ros::Time::now();
   stateAugmentation(msg->header.stamp.toSec());
-  double state_augmentation_time = (
-      ros::Time::now()-start_time).toSec();
+//  double state_augmentation_time = (
+//      ros::Time::now()-start_time).toSec();
 
   // Add new observations for existing features or new
   // features in the map server.
-  start_time = ros::Time::now();
+//  start_time = ros::Time::now();
   addFeatureObservations(msg);
-  double add_observations_time = (
-      ros::Time::now()-start_time).toSec();
+//  double add_observations_time = (
+//      ros::Time::now()-start_time).toSec();
 
   // Perform measurement update if necessary.
   start_time = ros::Time::now();
@@ -407,10 +402,10 @@ void MsckfVio::featureCallback(
       ros::Time::now()-start_time).toSec();
 
   // Publish the odometry.
-  start_time = ros::Time::now();
+//  start_time = ros::Time::now();
   publish(msg->header.stamp);
-  double publish_time = (
-      ros::Time::now()-start_time).toSec();
+//  double publish_time = (
+//      ros::Time::now()-start_time).toSec();
 
   // Reset the system if necessary.
   onlineReset();
@@ -435,8 +430,6 @@ void MsckfVio::featureCallback(
     //printf("Publish time: %f/%f\n",
     //    publish_time, publish_time/processing_time);
   }
-
-  return;
 }
 
 void MsckfVio::mocapOdomCallback(
@@ -502,7 +495,6 @@ void MsckfVio::mocapOdomCallback(
   //    mocap_odom_msg.twist.twist.linear);
 
   mocap_odom_pub.publish(mocap_odom_msg);
-  return;
 }
 
 void MsckfVio::batchImuProcessing(const double& time_bound) {
@@ -533,8 +525,6 @@ void MsckfVio::batchImuProcessing(const double& time_bound) {
   // Remove all used IMU msgs.
   imu_msg_buffer.erase(imu_msg_buffer.begin(),
       imu_msg_buffer.begin()+used_imu_msg_cntr);
-
-  return;
 }
 
 void MsckfVio::processModel(const double& time,
@@ -602,7 +592,7 @@ void MsckfVio::processModel(const double& time,
   state_server.state_cov.block<21, 21>(0, 0) =
     Phi*state_server.state_cov.block<21, 21>(0, 0)*Phi.transpose() + Q;
 
-  if (state_server.cam_states.size() > 0) {
+  if ( !state_server.cam_states.empty() ) {
     state_server.state_cov.block(
         0, 21, 21, state_server.state_cov.cols()-21) =
       Phi * state_server.state_cov.block(
@@ -624,7 +614,6 @@ void MsckfVio::processModel(const double& time,
 
   // Update the state info
   state_server.imu_state.time = time;
-  return;
 }
 
 void MsckfVio::predictNewState(const double& dt,
@@ -669,27 +658,27 @@ void MsckfVio::predictNewState(const double& dt,
   Vector3d k1_v = v + k1_v_dot*dt/2;
   Vector3d k2_v_dot = dR_dt2_transpose*acc +
     IMUState::gravity;
-  Vector3d k2_p_dot = k1_v;
+//  Vector3d k2_p_dot = k1_v;
 
   // k3 = f(tn+dt/2, yn+k2*dt/2)
   Vector3d k2_v = v + k2_v_dot*dt/2;
   Vector3d k3_v_dot = dR_dt2_transpose*acc +
     IMUState::gravity;
-  Vector3d k3_p_dot = k2_v;
+//  Vector3d k3_p_dot = k2_v;
 
   // k4 = f(tn+dt, yn+k3*dt)
   Vector3d k3_v = v + k3_v_dot*dt;
   Vector3d k4_v_dot = dR_dt_transpose*acc +
     IMUState::gravity;
-  Vector3d k4_p_dot = k3_v;
+//  Vector3d k4_p_dot = k3_v;
 
   // yn+1 = yn + dt/6*(k1+2*k2+2*k3+k4)
   q = dq_dt;
   quaternionNormalize(q);
-  v = v + dt/6*(k1_v_dot+2*k2_v_dot+2*k3_v_dot+k4_v_dot);
-  p = p + dt/6*(k1_p_dot+2*k2_p_dot+2*k3_p_dot+k4_p_dot);
-
-  return;
+//  v = v + dt/6*(k1_v_dot+2*k2_v_dot+2*k3_v_dot+k4_v_dot);
+//  p = p + dt/6*(k1_p_dot+2*k2_p_dot+2*k3_p_dot+k4_p_dot);
+    v = v + dt/6*(k1_v_dot+2*k2_v_dot+2*k3_v_dot+k4_v_dot);
+    p = p + dt/6*(k1_p_dot+2*k1_v    +2*k2_v    +k3_v);
 }
 
 void MsckfVio::stateAugmentation(const double& time) {
@@ -750,8 +739,6 @@ void MsckfVio::stateAugmentation(const double& time) {
   MatrixXd state_cov_fixed = (state_server.state_cov +
       state_server.state_cov.transpose()) / 2.0;
   state_server.state_cov = state_cov_fixed;
-
-  return;
 }
 
 void MsckfVio::addFeatureObservations(
@@ -782,8 +769,6 @@ void MsckfVio::addFeatureObservations(
   tracking_rate =
     static_cast<double>(tracked_feature_num) /
     static_cast<double>(curr_feature_num);
-
-  return;
 }
 
 void MsckfVio::measurementJacobian(
@@ -835,8 +820,8 @@ void MsckfVio::measurementJacobian(
   dpc1_dxc.leftCols(3) = R_c0_c1 * skewSymmetric(p_c0);
   dpc1_dxc.rightCols(3) = -R_w_c1;
 
-  Matrix3d dpc0_dpg = R_w_c0;
-  Matrix3d dpc1_dpg = R_w_c1;
+  Matrix3d &dpc0_dpg = R_w_c0; // Changed to reference.
+  Matrix3d &dpc1_dpg = R_w_c1; // Changed to reference.
 
   H_x = dz_dpc0*dpc0_dxc + dz_dpc1*dpc1_dxc;
   H_f = dz_dpc0*dpc0_dpg + dz_dpc1*dpc1_dpg;
@@ -855,8 +840,6 @@ void MsckfVio::measurementJacobian(
   // Compute the residual.
   r = z - Vector4d(p_c0(0)/p_c0(2), p_c0(1)/p_c0(2),
       p_c1(0)/p_c1(2), p_c1(1)/p_c1(2));
-
-  return;
 }
 
 void MsckfVio::featureJacobian(
@@ -911,8 +894,6 @@ void MsckfVio::featureJacobian(
 
   H_x = A.transpose() * H_xj;
   r = A.transpose() * r_j;
-
-  return;
 }
 
 void MsckfVio::measurementUpdate(
@@ -1015,8 +996,6 @@ void MsckfVio::measurementUpdate(
   MatrixXd state_cov_fixed = (state_server.state_cov +
       state_server.state_cov.transpose()) / 2.0;
   state_server.state_cov = state_cov_fixed;
-
-  return;
 }
 
 bool MsckfVio::gatingTest(
@@ -1088,7 +1067,7 @@ void MsckfVio::removeLostFeatures() {
     map_server.erase(feature_id);
 
   // Return if there is no lost feature to be processed.
-  if (processed_feature_ids.size() == 0) return;
+  if ( processed_feature_ids.empty() ) return;
 
   MatrixXd H_x = MatrixXd::Zero(jacobian_row_size,
       21+6*state_server.cam_states.size());
@@ -1127,8 +1106,6 @@ void MsckfVio::removeLostFeatures() {
   // Remove all processed features from the map.
   for (const auto& feature_id : processed_feature_ids)
     map_server.erase(feature_id);
-
-  return;
 }
 
 void MsckfVio::findRedundantCamStates(
@@ -1173,8 +1150,6 @@ void MsckfVio::findRedundantCamStates(
 
   // Sort the elements in the output vector.
   sort(rm_cam_state_ids.begin(), rm_cam_state_ids.end());
-
-  return;
 }
 
 void MsckfVio::pruneCamStateBuffer() {
@@ -1199,8 +1174,8 @@ void MsckfVio::pruneCamStateBuffer() {
         involved_cam_state_ids.push_back(cam_id);
     }
 
-    if (involved_cam_state_ids.size() == 0) continue;
-    if (involved_cam_state_ids.size() == 1) {
+    if ( involved_cam_state_ids.empty() ) continue;
+    if ( involved_cam_state_ids.size() == 1 ) {
       feature.observations.erase(involved_cam_state_ids[0]);
       continue;
     }
@@ -1245,7 +1220,7 @@ void MsckfVio::pruneCamStateBuffer() {
         involved_cam_state_ids.push_back(cam_id);
     }
 
-    if (involved_cam_state_ids.size() == 0) continue;
+    if ( involved_cam_state_ids.empty() ) continue;
 
     MatrixXd H_xj;
     VectorXd r_j;
@@ -1300,8 +1275,6 @@ void MsckfVio::pruneCamStateBuffer() {
     // Remove this camera state in the state vector.
     state_server.cam_states.erase(cam_id);
   }
-
-  return;
 }
 
 void MsckfVio::onlineReset() {
@@ -1360,7 +1333,6 @@ void MsckfVio::onlineReset() {
     state_server.state_cov(i, i) = extrinsic_translation_cov;
 
   ROS_WARN("%lld online reset complete...", online_reset_counter);
-  return;
 }
 
 void MsckfVio::publish(const ros::Time& time) {
@@ -1440,8 +1412,6 @@ void MsckfVio::publish(const ros::Time& time) {
   feature_msg_ptr->width = feature_msg_ptr->points.size();
 
   feature_pub.publish(feature_msg_ptr);
-
-  return;
 }
 
 } // namespace msckf_vio

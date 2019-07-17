@@ -30,14 +30,12 @@ ImageProcessor::ImageProcessor(ros::NodeHandle& n) :
   stereo_sub(10),
   prev_features_ptr(new GridFeatures()),
   curr_features_ptr(new GridFeatures()) {
-  return;
 }
 
 ImageProcessor::~ImageProcessor() {
   destroyAllWindows();
   //ROS_INFO("Feature lifetime statistics:");
   //featureLifetimeStatistics();
-  return;
 }
 
 bool ImageProcessor::loadParameters() {
@@ -230,7 +228,7 @@ void ImageProcessor::stereoCallback(
     is_first_img = false;
 
     // Draw results.
-    start_time = ros::Time::now();
+//    start_time = ros::Time::now();
     drawFeaturesStereo();
     //ROS_INFO("Draw features: %f",
     //    (ros::Time::now()-start_time).toSec());
@@ -242,19 +240,19 @@ void ImageProcessor::stereoCallback(
     //    (ros::Time::now()-start_time).toSec());
 
     // Add new features into the current image.
-    start_time = ros::Time::now();
+//    start_time = ros::Time::now();
     addNewFeatures();
     //ROS_INFO("Addition time: %f",
     //    (ros::Time::now()-start_time).toSec());
 
     // Add new features into the current image.
-    start_time = ros::Time::now();
+//    start_time = ros::Time::now();
     pruneGridFeatures();
     //ROS_INFO("Prune grid features: %f",
     //    (ros::Time::now()-start_time).toSec());
 
     // Draw results.
-    start_time = ros::Time::now();
+//    start_time = ros::Time::now();
     drawFeaturesStereo();
     //ROS_INFO("Draw features: %f",
     //    (ros::Time::now()-start_time).toSec());
@@ -266,7 +264,7 @@ void ImageProcessor::stereoCallback(
   //    (ros::Time::now()-start_time).toSec());
 
   // Publish features in the current image.
-  ros::Time start_time = ros::Time::now();
+//  ros::Time start_time = ros::Time::now();
   publish();
   //ROS_INFO("Publishing: %f",
   //    (ros::Time::now()-start_time).toSec());
@@ -282,8 +280,6 @@ void ImageProcessor::stereoCallback(
       processor_config.grid_row*processor_config.grid_col; ++code) {
     (*curr_features_ptr)[code] = vector<FeatureMetaData>(0);
   }
-
-  return;
 }
 
 void ImageProcessor::imuCallback(
@@ -291,7 +287,6 @@ void ImageProcessor::imuCallback(
   // Wait for the first image to be set.
   if (is_first_img) return;
   imu_msg_buffer.push_back(*msg);
-  return;
 }
 
 void ImageProcessor::createImagePyramids() {
@@ -380,8 +375,6 @@ void ImageProcessor::initializeFirstFrame() {
       features_this_grid.back().lifetime = 1;
     }
   }
-
-  return;
 }
 
 void ImageProcessor::predictFeatureTracking(
@@ -391,7 +384,7 @@ void ImageProcessor::predictFeatureTracking(
     vector<cv::Point2f>& compensated_pts) {
 
   // Return directly if there are no input features.
-  if (input_pts.size() == 0) {
+  if ( input_pts.empty() ) {
     compensated_pts.clear();
     return;
   }
@@ -410,8 +403,6 @@ void ImageProcessor::predictFeatureTracking(
     compensated_pts[i].x = p2[0] / p2[2];
     compensated_pts[i].y = p2[1] / p2[2];
   }
-
-  return;
 }
 
 void ImageProcessor::trackFeatures() {
@@ -447,7 +438,7 @@ void ImageProcessor::trackFeatures() {
 
   // Abort tracking if there is no features in
   // the previous frame.
-  if (prev_ids.size() == 0) return;
+  if ( prev_ids.empty() ) return;
 
   // Track features using LK optical flow method.
   vector<Point2f> curr_cam0_points(0);
@@ -602,8 +593,6 @@ void ImageProcessor::trackFeatures() {
   //    curr_feature_num, prev_feature_num,
   //    static_cast<double>(curr_feature_num)/
   //    (static_cast<double>(prev_feature_num)+1e-5));
-
-  return;
 }
 
 void ImageProcessor::stereoMatch(
@@ -611,9 +600,9 @@ void ImageProcessor::stereoMatch(
     vector<cv::Point2f>& cam1_points,
     vector<unsigned char>& inlier_markers) {
 
-  if (cam0_points.size() == 0) return;
+  if ( cam0_points.empty() ) return;
 
-  if(cam1_points.size() == 0) {
+  if( cam1_points.empty() ) {
     // Initialize cam1_points by projecting cam0_points to cam1 using the
     // rotation from stereo extrinsics
     const cv::Matx33d R_cam0_cam1 = R_cam1_imu.t() * R_cam0_imu;
@@ -686,8 +675,6 @@ void ImageProcessor::stereoMatch(
     if (error > processor_config.stereo_threshold*norm_pixel_unit)
       inlier_markers[i] = 0;
   }
-
-  return;
 }
 
 void ImageProcessor::addNewFeatures() {
@@ -827,8 +814,6 @@ void ImageProcessor::addNewFeatures() {
 
   //printf("\033[0;33m detected: %d; matched: %d; new added feature: %d\033[0m\n",
   //    detected_new_features, matched_new_features, new_added_feature_num);
-
-  return;
 }
 
 void ImageProcessor::pruneGridFeatures() {
@@ -844,7 +829,6 @@ void ImageProcessor::pruneGridFeatures() {
         processor_config.grid_max_feature_num,
         grid_features.end());
   }
-  return;
 }
 
 void ImageProcessor::undistortPoints(
@@ -856,7 +840,7 @@ void ImageProcessor::undistortPoints(
     const cv::Matx33d &rectification_matrix,
     const cv::Vec4d &new_intrinsics) {
 
-  if (pts_in.size() == 0) return;
+  if ( pts_in.empty() ) return;
 
   const cv::Matx33d K(
       intrinsics[0], 0.0, intrinsics[2],
@@ -880,8 +864,6 @@ void ImageProcessor::undistortPoints(
     cv::undistortPoints(pts_in, pts_out, K, distortion_coeffs,
                         rectification_matrix, K_new);
   }
-
-  return;
 }
 
 vector<cv::Point2f> ImageProcessor::distortPoints(
@@ -959,7 +941,6 @@ void ImageProcessor::integrateImuData(
 
   // Delete the useless and used imu messages.
   imu_msg_buffer.erase(imu_msg_buffer.begin(), end_iter);
-  return;
 }
 
 void ImageProcessor::rescalePoints(
@@ -980,8 +961,6 @@ void ImageProcessor::rescalePoints(
     pts1[i] *= scaling_factor;
     pts2[i] *= scaling_factor;
   }
-
-  return;
 }
 
 void ImageProcessor::twoPointRansac(
@@ -1098,7 +1077,7 @@ void ImageProcessor::twoPointRansac(
   }
 
   vector<int> best_inlier_set;
-  double best_error = 1e10;
+//  double best_error = 1e10;
   random_numbers::RandomNumberGenerator random_gen;
 
   for (int iter_idx = 0; iter_idx < iter_num; ++iter_idx) {
@@ -1212,7 +1191,7 @@ void ImageProcessor::twoPointRansac(
     this_error /= inlier_set.size();
 
     if (inlier_set.size() > best_inlier_set.size()) {
-      best_error = this_error;
+//      best_error = this_error;
       best_inlier_set = inlier_set;
     }
   }
@@ -1225,8 +1204,6 @@ void ImageProcessor::twoPointRansac(
 
   //printf("inlier ratio: %lu/%lu\n",
   //    best_inlier_set.size(), inlier_markers.size());
-
-  return;
 }
 
 void ImageProcessor::publish() {
@@ -1276,8 +1253,6 @@ void ImageProcessor::publish() {
   tracking_info_msg_ptr->after_matching = after_matching;
   tracking_info_msg_ptr->after_ransac = after_ransac;
   tracking_info_pub.publish(tracking_info_msg_ptr);
-
-  return;
 }
 
 void ImageProcessor::drawFeaturesMono() {
@@ -1449,8 +1424,6 @@ void ImageProcessor::drawFeaturesStereo() {
   }
   //imshow("Feature", out_img);
   //waitKey(5);
-
-  return;
 }
 
 void ImageProcessor::updateFeatureLifetime() {
@@ -1464,8 +1437,6 @@ void ImageProcessor::updateFeatureLifetime() {
         ++feature_lifetime[feature.id];
     }
   }
-
-  return;
 }
 
 void ImageProcessor::featureLifetimeStatistics() {
@@ -1481,8 +1452,6 @@ void ImageProcessor::featureLifetimeStatistics() {
 
   for (const auto& data : lifetime_statistics)
     cout << data.first << " : " << data.second << endl;
-
-  return;
 }
 
 } // end namespace msckf_vio

@@ -73,6 +73,8 @@ include_directories(
   ${Boost_INCLUDE_DIR}
   ${OpenCV_INCLUDE_DIRS}
   ${SUITESPARSE_INCLUDE_DIRS}
+        # This is for the IDE to find the header files.
+        ../../devel/include
 )
 
 # Msckf Vio

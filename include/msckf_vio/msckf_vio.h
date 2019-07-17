@@ -127,7 +127,7 @@ class MsckfVio {
         std_srvs::Trigger::Response& res);
 
     // Filter related functions
-    // Propogate the state
+    // Propagate the state
     void batchImuProcessing(
         const double& time_bound);
     void processModel(const double& time,
@@ -188,9 +188,9 @@ class MsckfVio {
 
     // The position uncertainty threshold is used to determine
     // when to reset the system online. Otherwise, the ever-
-    // increaseing uncertainty will make the estimation unstable.
+    // increasing uncertainty will make the estimation unstable.
     // Note this online reset will be some dead-reckoning.
-    // Set this threshold to nonpositive to disable online reset.
+    // Set this threshold to non-positive to disable online reset.
     double position_std_threshold;
 
     // Tracking rate
@@ -219,7 +219,7 @@ class MsckfVio {
     // Whether to publish tf or not.
     bool publish_tf;
 
-    // Framte rate of the stereo images. This variable is
+    // Frame rate of the stereo images. This variable is
     // only used to determine the timing threshold of
     // each iteration of the filter.
     double frame_rate;
