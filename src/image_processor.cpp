@@ -761,7 +761,7 @@ namespace msckf_vio {
         if (matched_new_features < 5 &&
             static_cast<double>(matched_new_features) /
             static_cast<double>(detected_new_features) < 0.1)
-            ROS_WARN("Images at [%f] seems unsynced...",
+            ROS_WARN("Images at [%f] seems unsynced...(  )",
                      cam0_curr_img_ptr->header.stamp.toSec());
 
         // Group the features into grids
@@ -1081,7 +1081,7 @@ namespace msckf_vio {
 
         vector<int> best_inlier_set;
 //  double best_error = 1e10;
-        random_numbers::RandomNumberGenerator random_gen;
+        random_numbers::RandomNumberGenerator random_gen(37);
 
         for (int iter_idx = 0; iter_idx < iter_num; ++iter_idx) {
             // Randomly select two point pairs.
@@ -1185,7 +1185,7 @@ namespace msckf_vio {
                 model_better(2) = 1.0;
             }
 
-            // Compute the error and upate the best model if possible.
+            // Compute the error and update the best model if possible.
             VectorXd new_error = coeff_t * model_better;
 
             double this_error = 0.0;

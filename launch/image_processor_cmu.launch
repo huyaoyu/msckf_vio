@@ -2,7 +2,7 @@
 
   <arg name="robot" default="Shimizu_M210"/>
   <arg name="calibration_file"
-    default="$(find msckf_vio)/config/camchain-imucam-euroc.yaml"/>
+    default="$(find msckf_vio)/config/camchain-imucam-calib_0_reorder.yaml"/>
 
   <!-- Image Processor Nodelet  -->
   <group ns="$(arg robot)">

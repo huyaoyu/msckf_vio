@@ -367,29 +367,29 @@ namespace msckf_vio {
             state_server.imu_state.time = msg->header.stamp.toSec();
         }
 
-//  static double max_processing_time = 0.0;
+        //  static double max_processing_time = 0.0;
         static int critical_time_cntr = 0;
         double processing_start_time = ros::Time::now().toSec();
 
-        // Propogate the IMU state.
+        // Propagate the IMU state
         // that are received before the image msg.
         ros::Time start_time = ros::Time::now();
         batchImuProcessing(msg->header.stamp.toSec());
-//  double imu_processing_time = (
-//      ros::Time::now()-start_time).toSec();
+        //  double imu_processing_time = (
+        //      ros::Time::now()-start_time).toSec();
 
         // Augment the state vector.
-//  start_time = ros::Time::now();
+        //  start_time = ros::Time::now();
         stateAugmentation(msg->header.stamp.toSec());
-//  double state_augmentation_time = (
-//      ros::Time::now()-start_time).toSec();
+        //  double state_augmentation_time = (
+        //      ros::Time::now()-start_time).toSec();
 
         // Add new observations for existing features or new
         // features in the map server.
-//  start_time = ros::Time::now();
+        //  start_time = ros::Time::now();
         addFeatureObservations(msg);
-//  double add_observations_time = (
-//      ros::Time::now()-start_time).toSec();
+        //  double add_observations_time = (
+        //      ros::Time::now()-start_time).toSec();
 
         // Perform measurement update if necessary.
         start_time = ros::Time::now();
@@ -403,10 +403,10 @@ namespace msckf_vio {
                 ros::Time::now() - start_time).toSec();
 
         // Publish the odometry.
-//  start_time = ros::Time::now();
+        //  start_time = ros::Time::now();
         publish(msg->header.stamp);
-//  double publish_time = (
-//      ros::Time::now()-start_time).toSec();
+        //  double publish_time = (
+        //      ros::Time::now()-start_time).toSec();
 
         // Reset the system if necessary.
         onlineReset();
@@ -416,7 +416,7 @@ namespace msckf_vio {
                 processing_end_time - processing_start_time;
         if (processing_time > 1.0 / frame_rate) {
             ++critical_time_cntr;
-            ROS_INFO("\033[1;31mTotal processing time %f/%d...\033[0m",
+            ROS_WARN("\033[1;31mTotal processing time %f/%d...\033[0m",
                      processing_time, critical_time_cntr);
             //printf("IMU processing time: %f/%f\n",
             //    imu_processing_time, imu_processing_time/processing_time);
@@ -508,6 +508,9 @@ namespace msckf_vio {
                 ++used_imu_msg_cntr;
                 continue;
             }
+
+            // time_bound should be the timestamp of the current received
+            // image feature message.
             if (imu_time > time_bound) break;
 
             // Convert the msgs.
@@ -536,7 +539,7 @@ namespace msckf_vio {
         IMUState &imu_state = state_server.imu_state;
         Vector3d gyro = m_gyro - imu_state.gyro_bias;
         Vector3d acc = m_acc - imu_state.acc_bias;
-        double dtime = time - imu_state.time;
+        double dtime = time - imu_state.time; // imu_state.time will be updated to be equal to `time`.
 
         // Compute discrete transition and noise covariance matrix
         Matrix<double, 21, 21> F = Matrix<double, 21, 21>::Zero();
@@ -565,7 +568,9 @@ namespace msckf_vio {
         Matrix<double, 21, 21> Phi = Matrix<double, 21, 21>::Identity() +
                                      Fdt + 0.5 * Fdt_square + (1.0 / 6.0) * Fdt_cube;
 
-        // Propogate the state using 4th order Runge-Kutta
+        // Propagate the state using 4th order Runge-Kutta
+        // state_server.imu_state.orientation, state_server.imu_state.velocity, and
+        // state_server.imu_state.position will be updated.
         predictNewState(dtime, gyro, acc);
 
         // Modify the transition matrix
@@ -587,7 +592,7 @@ namespace msckf_vio {
                 imu_state.position) * IMUState::gravity;
         Phi.block<3, 3>(12, 0) = A2 - (A2 * u - w2) * s;
 
-        // Propogate the state covariance matrix.
+        // Propagate the state covariance matrix.
         Matrix<double, 21, 21> Q = Phi * G * state_server.continuous_noise_cov *
                                    G.transpose() * Phi.transpose() * dtime;
         state_server.state_cov.block<21, 21>(0, 0) =
@@ -608,7 +613,7 @@ namespace msckf_vio {
                                     state_server.state_cov.transpose()) / 2.0;
         state_server.state_cov = state_cov_fixed;
 
-        // Update the state correspondes to null space.
+        // Update the state corresponds to null space.
         imu_state.orientation_null = imu_state.orientation;
         imu_state.position_null = imu_state.position;
         imu_state.velocity_null = imu_state.velocity;
@@ -658,25 +663,25 @@ namespace msckf_vio {
         Vector3d k1_v = v + k1_v_dot * dt / 2;
         Vector3d k2_v_dot = dR_dt2_transpose * acc +
                             IMUState::gravity;
-//  Vector3d k2_p_dot = k1_v;
+        //  Vector3d k2_p_dot = k1_v;
 
         // k3 = f(tn+dt/2, yn+k2*dt/2)
         Vector3d k2_v = v + k2_v_dot * dt / 2;
         Vector3d k3_v_dot = dR_dt2_transpose * acc +
                             IMUState::gravity;
-//  Vector3d k3_p_dot = k2_v;
+        //  Vector3d k3_p_dot = k2_v;
 
         // k4 = f(tn+dt, yn+k3*dt)
         Vector3d k3_v = v + k3_v_dot * dt;
         Vector3d k4_v_dot = dR_dt_transpose * acc +
                             IMUState::gravity;
-//  Vector3d k4_p_dot = k3_v;
+        //  Vector3d k4_p_dot = k3_v;
 
         // yn+1 = yn + dt/6*(k1+2*k2+2*k3+k4)
         q = dq_dt;
         quaternionNormalize(q);
-//  v = v + dt/6*(k1_v_dot+2*k2_v_dot+2*k3_v_dot+k4_v_dot);
-//  p = p + dt/6*(k1_p_dot+2*k2_p_dot+2*k3_p_dot+k4_p_dot);
+        //  v = v + dt/6*(k1_v_dot+2*k2_v_dot+2*k3_v_dot+k4_v_dot);
+        //  p = p + dt/6*(k1_p_dot+2*k2_p_dot+2*k3_p_dot+k4_p_dot);
         v = v + dt / 6 * (k1_v_dot + 2 * k2_v_dot + 2 * k3_v_dot + k4_v_dot);
         p = p + dt / 6 * (k1_p_dot + 2 * k1_v + 2 * k2_v + k3_v);
     }
@@ -911,7 +916,7 @@ namespace msckf_vio {
             // Convert H to a sparse matrix.
             SparseMatrix<double> H_sparse = H.sparseView();
 
-            // Perform QR decompostion on H_sparse.
+            // Perform QR decomposition on H_sparse.
             SPQR<SparseMatrix<double> > spqr_helper;
             spqr_helper.setSPQROrdering(SPQR_ORDERING_NATURAL);
             spqr_helper.compute(H_sparse);
@@ -1095,7 +1100,7 @@ namespace msckf_vio {
             }
 
             // Put an upper bound on the row size of measurement Jacobian,
-            // which helps guarantee the executation time.
+            // which helps guarantee the execution time.
             if (stack_cntr > 1500) break;
         }
 
@@ -1305,7 +1310,7 @@ namespace msckf_vio {
         // Remove all existing camera states.
         state_server.cam_states.clear();
 
-        // Clear all exsiting features in the map.
+        // Clear all existing features in the map.
         map_server.clear();
 
         // Reset the state covariance.
