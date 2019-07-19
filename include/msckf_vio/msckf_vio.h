@@ -232,6 +232,33 @@ class MsckfVio {
     ros::Publisher mocap_odom_pub;
     geometry_msgs::TransformStamped raw_mocap_odom_msg;
     Eigen::Isometry3d mocap_initial_frame;
+
+    class PerPublishInfo {
+    public:
+        PerPublishInfo()
+        : mPublishCount(0), mFC_IsLostFeatures(false), mFC_IsPruneCamState(false) {
+
+        }
+
+        PerPublishInfo( const PerPublishInfo& ppi )
+        : mPublishCount(ppi.mPublishCount),
+        mFC_IsLostFeatures( ppi.mFC_IsLostFeatures ), mFC_IsPruneCamState( ppi.mFC_IsPruneCamState )
+        {
+
+        }
+
+        ~PerPublishInfo() {}
+    public:
+        size_t mPublishCount;
+        bool mFC_IsLostFeatures;
+        bool mFC_IsPruneCamState;
+    };
+
+    PerPublishInfo mPPI;
+    std::vector<PerPublishInfo> mVecPPI;
+
+private:
+    void clear_debug_members(void);
 };
 
 typedef MsckfVio::Ptr MsckfVioPtr;

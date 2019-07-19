@@ -54,6 +54,9 @@ namespace msckf_vio {
             is_gravity_set(false),
             is_first_img(true),
             nh(pnh) {
+        mPPI.mPublishCount = 0;
+        mPPI.mFC_IsLostFeatures  = false;
+        mPPI.mFC_IsPruneCamState = false;
     }
 
     bool MsckfVio::loadParameters() {
@@ -356,6 +359,9 @@ namespace msckf_vio {
     void MsckfVio::featureCallback(
             const CameraMeasurementConstPtr &msg) {
 
+        // Clear the members for debugging.
+        clear_debug_members();
+
         // Return if the gravity vector has not been set.
         if (!is_gravity_set) return;
 
@@ -430,6 +436,24 @@ namespace msckf_vio {
                    prune_cam_states_time, prune_cam_states_time / processing_time);
             //printf("Publish time: %f/%f\n",
             //    publish_time, publish_time/processing_time);
+        }
+
+        // Save the PerPublishInfo object.
+        mVecPPI.push_back( mPPI );
+
+        if ( 537 == mPPI.mPublishCount )
+        {
+            std::cout << "Publish count " << mPPI.mPublishCount << ", "
+                      << "IsLostFeatures: " << mPPI.mFC_IsLostFeatures << ", "
+                      << "IsPruneCamStateBuffer: " << mPPI.mFC_IsPruneCamState << ". "
+                      << std::endl;
+        }
+        else if ( 538 == mPPI.mPublishCount )
+        {
+            std::cout << "Publish count " << mPPI.mPublishCount << ", "
+                      << "IsLostFeatures: " << mPPI.mFC_IsLostFeatures << ", "
+                      << "IsPruneCamStateBuffer: " << mPPI.mFC_IsPruneCamState << ". "
+                      << std::endl;
         }
     }
 
@@ -1113,6 +1137,9 @@ namespace msckf_vio {
         // Remove all processed features from the map.
         for (const auto &feature_id : processed_feature_ids)
             map_server.erase(feature_id);
+
+        // Set the flag for debug.
+        mPPI.mFC_IsLostFeatures = true;
     }
 
     void MsckfVio::findRedundantCamStates(
@@ -1282,6 +1309,9 @@ namespace msckf_vio {
             // Remove this camera state in the state vector.
             state_server.cam_states.erase(cam_id);
         }
+
+        // Set the flag for debug.
+        mPPI.mFC_IsPruneCamState = true;
     }
 
     void MsckfVio::onlineReset() {
@@ -1420,6 +1450,14 @@ namespace msckf_vio {
         feature_msg_ptr->width = feature_msg_ptr->points.size();
 
         feature_pub.publish(feature_msg_ptr);
+
+        mPPI.mPublishCount++;
+    }
+
+    void MsckfVio::clear_debug_members(void)
+    {
+        mPPI.mFC_IsLostFeatures  = false;
+        mPPI.mFC_IsPruneCamState = false;
     }
 
 } // namespace msckf_vio
